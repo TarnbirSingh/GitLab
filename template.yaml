@@ -1,149 +1,157 @@
-template:
-  # --- METADATA ---
-  name: "gitlab-ce-server"
-  display_name: "GitLab CE Server"
-  description: "Selbst-gehostete GitLab Community Edition Instanz mit automatisch angelegten Benutzeraccounts für Studierende."
-  version: "1.0.0"
-  category: "education"
-  author: "DHBW CloudStore Team"
-  icon: gitlab.png
+name: gitlab-ce-server
+display_name: "GitLab CE Server"
+description: "Selbst-gehostete GitLab Community Edition mit automatisch angelegten Studierenden-Accounts und optionalen GitLab-Gruppen."
+version: "2.0.0"
+category: "education"
+author: "DHBW CloudStore Team"
+icon: gitlab.png
 
-  terraform:
-    working_dir: terraform/
-    required_version: ">= 1.6.0"
+terraform:
+  working_dir: terraform/
+  required_version: ">= 1.6.0"
 
-  email_credentials:
-    enabled: true
+tags:
+  - gitlab
+  - git
+  - devops
+  - education
 
-  tags:
-    - gitlab
-    - git
-    - devops
-    - education
+email_credentials:
+  enabled: true
 
-  parameters:
-    # --- Allgemein ---
+deploy-strategy:
+  one-instance: true
+
+ui-groups:
+  - id: general
+    title: "Allgemein und Nutzer"
+    order: 1
+  - id: resources
+    title: "Ressourcen"
+    order: 2
+  - id: specific
+    title: "GitLab-Optionen"
+    order: 3
+
+parameters:
+
+  general:
     - name: app_name
       type: string
-      description: "Name der GitLab-Instanz (z.B. wwi23sea-gitlab)"
       required: true
       validation:
         pattern: "^[a-z0-9-]{3,20}$"
+      description: "Name der GitLab-Instanz"
       x-ui:
-        group: "Allgemein"
-        order: 1
+        group_id: general
+        in_group_order: 1
         icon: Server
         placeholder: "z.B. wwi23sea-gitlab"
         hint: "Nur Kleinbuchstaben, Zahlen und Bindestriche (3-20 Zeichen)"
 
-    - name: admin_email
+    - name: admin_username
       type: string
-      description: "E-Mail des Dozenten (erhält GitLab-Root-Admin-Rechte)"
       required: true
-      validation:
-        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      description: "Dozent (erhält GitLab-Root-Admin-Rechte)"
       x-ui:
-        group: "Allgemein"
-        order: 2
+        group_id: general
+        in_group_order: 2
         icon: Users
-        placeholder: "dozent@dhbw-mannheim.de"
-        widget: user-picker
-        multi: false
-        extract: email
+        placeholder: "Dozent auswählen..."
+        widget:
+          type: user-picker
+          multi: false
+          extract: email
 
-    - name: student_emails
+    - name: students
       type: array
-      description: "E-Mails der Studierenden (werden als GitLab-User angelegt)"
       required: true
       validation:
         min_items: 1
         max_items: 30
+      description: "Studierende (werden als GitLab-User angelegt)"
       x-ui:
-        group: "Allgemein"
-        order: 3
+        group_id: general
+        in_group_order: 3
         icon: Users
-        widget: user-picker
-        multi: true
-        extract: email
+        placeholder: "Studierende auswählen..."
+        widget:
+          type: user-picker
+          multi: true
+          extract: email
 
-    # --- Ressourcen ---
+  specific:
     - name: flavor_name
       type: selection
-      description: "Ressourcen (Quota)"
       required: true
-      options:
-        - label: "Small (1 CPU, 2GB RAM)"
-          value: "gp1.small"
-        - label: "Medium (2 CPU, 4GB RAM)"
-          value: "gp1.medium"
-        - label: "Large (4 CPU, 8GB RAM)"
-          value: "gp1.large"
       default: "gp1.large"
+      options:
+        - label: "Small (1 CPU, 2 GB RAM)"
+          value: "gp1.small"
+        - label: "Medium (2 CPU, 4 GB RAM)"
+          value: "gp1.medium"
+        - label: "Large (4 CPU, 8 GB RAM) — Empfohlen"
+          value: "gp1.large"
+      description: "VM-Größe"
+      x-ui:
+        group_id: resources
+        in_group_order: 1
+        icon: Cpu
+        hint: "GitLab CE braucht mindestens 4 GB RAM — Large empfohlen."
 
-    # --- GitLab-Optionen ---
     - name: gitlab_version
       type: string
-      description: "GitLab CE Version (z.B. 17.0.0-ce.0)"
       required: false
       default: "17.0.8-ce.0"
+      description: "GitLab CE Paketversion"
       x-ui:
-        group: "GitLab-Optionen"
-        order: 1
+        group_id: specific
+        in_group_order: 1
         icon: Server
-        placeholder: "17.0.0-ce.0"
-        hint: "Paketversion aus dem offiziellen GitLab-Repository"
+        placeholder: "17.0.8-ce.0"
+        hint: "Versionsnummer aus dem offiziellen GitLab-Repository."
 
-    - name: groups
-      type: object
-      description: "GitLab-Gruppen mit Mitgliedern (optional)"
+    - name: gitlab_groups
+      type: groups
       required: false
-      default: {}
+      description: "GitLab-interne Gruppen mit Mitgliedern (optional)"
       x-ui:
-        group: "GitLab-Optionen"
-        order: 2
+        group_id: specific
+        in_group_order: 2
         icon: Users
-        widget: group-builder
-        extract: email
-        hint: "Gruppen anlegen und Studierende individuell zuweisen"
+        hint: "Optional: Studierende in GitLab-Gruppen organisieren. Wird in GitLab als Gruppe mit Mitgliedern angelegt."
+        widget:
+          type: group-builder
+          extract: email
 
-  outputs:
-    # SYSTEM PFLICHTFELDER (Hidden)
-    - name: instance_id
-      description: "System ID der Instanz"
-      display: false
+outputs:
+  - name: instance_id
+    description: "System ID der Instanz"
+    display: false
 
-    - name: app_name
-      description: "Name der Anwendung"
-      display: true
+  - name: app_name
+    description: "Name der Anwendung"
+    display: true
 
-    # USER OUTPUTS
-    - name: gitlab_url
-      description: "GitLab Web-Oberfläche"
-      display: true
+  - name: gitlab_url
+    description: "GitLab Web-Oberfläche"
+    display: true
 
-    - name: ssh_command
-      description: "SSH-Zugang zur VM"
-      display: true
+  - name: ssh_command
+    description: "SSH-Zugang zur VM"
+    display: true
 
-    - name: admin_credentials
-      description: "Admin-Zugangsdaten (Dozent)"
-      sensitive: true
-      display: false
+  - name: admin_credentials
+    description: "Admin-Zugangsdaten (Dozent)"
+    sensitive: true
+    display: false
 
-    - name: student_credentials
-      description: "Studierenden-Zugangsdaten"
-      sensitive: true
-      display: false
+  - name: student_credentials
+    description: "Studierenden-Zugangsdaten"
+    sensitive: true
+    display: false
 
-    - name: ssh_private_key
-      description: "SSH Private Key"
-      sensitive: true
-      display: false
-
-  estimated_costs:
-    hourly: "0.15 - 0.35 EUR"
-    monthly: "110 - 250 EUR"
-
-  requirements:
-    - "SSH Port 22"
-    - "HTTP Port 80 (GitLab Web UI)"
+  - name: ssh_private_key
+    description: "SSH Private Key"
+    sensitive: true
+    display: false

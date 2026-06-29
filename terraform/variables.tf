@@ -31,27 +31,27 @@ variable "app_name" {
   }
 }
 
-variable "admin_email" {
+variable "admin_username" {
   type        = string
   description = "E-Mail des Dozenten (erhält GitLab Root-Admin-Rechte)"
   validation {
-    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.admin_email))
-    error_message = "admin_email: Muss eine gültige E-Mail-Adresse sein."
+    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.admin_username))
+    error_message = "admin_username: Muss eine gültige E-Mail-Adresse sein."
   }
 }
 
-variable "student_emails" {
+variable "students" {
   type        = list(string)
   description = "E-Mails der Studierenden (werden als GitLab-User angelegt)"
   validation {
-    condition     = length(var.student_emails) >= 1 && length(var.student_emails) <= 30
-    error_message = "student_emails: Mindestens 1, maximal 30 E-Mail-Adressen."
+    condition     = length(var.students) >= 1 && length(var.students) <= 30
+    error_message = "students: Mindestens 1, maximal 30 E-Mail-Adressen."
   }
   validation {
     condition = alltrue([
-      for email in var.student_emails : can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+      for email in var.students : can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
     ])
-    error_message = "Alle Einträge in student_emails müssen gültige E-Mail-Adressen sein."
+    error_message = "Alle Einträge in students müssen gültige E-Mail-Adressen sein."
   }
 }
 
@@ -67,18 +67,18 @@ variable "flavor_name" {
 
 variable "gitlab_version" {
   type        = string
-  description = "GitLab CE Paketversion (z.B. 17.0.0-ce.0)"
+  description = "GitLab CE Paketversion (z.B. 17.0.8-ce.0)"
   default     = "17.0.8-ce.0"
 }
 
-variable "groups" {
+variable "gitlab_groups" {
   type        = map(list(string))
-  description = "GitLab-Gruppen mit Mitgliedern: { gruppenname = [email1, email2, ...] }"
+  description = "GitLab-interne Gruppen mit Mitgliedern: { gruppenname = [email1, email2, ...] }"
   default     = {}
 }
 
 # ==============================================================================
-# INFRASTRUCTURE DEFAULTS (werden vom CloudStore gesetzt)
+# INFRASTRUCTURE DEFAULTS
 # ==============================================================================
 
 variable "image_name" {

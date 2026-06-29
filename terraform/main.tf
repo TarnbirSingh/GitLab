@@ -25,6 +25,30 @@ provider "openstack" {
 }
 
 # ==============================================================================
+# LOCALS
+# ==============================================================================
+locals {
+  # Email → GitLab/Linux-Username:
+  # Local-Part bleibt, jedes Domain-Token wird auf max. 2 Zeichen gekappt,
+  # hart begrenzt auf 32 Zeichen (Linux UT_NAMESIZE).
+  #   s2327001@student.dhbw-mannheim.de → s2327001_st_dh-ma_de
+  #   prof1@dhbw-mannheim.de            → prof1_dh-ma_de
+  email_to_username = {
+    for email in concat([var.admin_username], var.students) :
+    email => substr(
+      lower(join("_", concat(
+        [split("@", email)[0]],
+        [
+          for token in split(".", split("@", email)[1]) :
+          join("-", [for part in split("-", token) : substr(part, 0, 2)])
+        ]
+      ))),
+      0, 32
+    )
+  }
+}
+
+# ==============================================================================
 # DATA SOURCES
 # ==============================================================================
 
@@ -56,7 +80,7 @@ resource "random_password" "admin_password" {
 }
 
 resource "random_password" "student_passwords" {
-  for_each         = toset(var.student_emails)
+  for_each         = toset(var.students)
   length           = 16
   special          = true
   override_special = "_%@"
@@ -124,18 +148,18 @@ resource "openstack_compute_instance_v2" "gitlab_server" {
   depends_on = [openstack_networking_floatingip_v2.gitlab_fip]
 
   user_data = templatefile("${path.module}/cloud-init.yaml", {
-    app_name           = var.app_name
-    gitlab_version     = var.gitlab_version
-    floating_ip        = openstack_networking_floatingip_v2.gitlab_fip[0].address
-    groups             = var.groups
+    app_name       = var.app_name
+    gitlab_version = var.gitlab_version
+    floating_ip    = openstack_networking_floatingip_v2.gitlab_fip[0].address
+    groups         = var.gitlab_groups
 
-    admin_username = replace(replace(lower(var.admin_email), "@", "_"), ".", "_")
-    admin_email    = var.admin_email
+    admin_username = local.email_to_username[var.admin_username]
+    admin_email    = var.admin_username
     admin_password = random_password.admin_password.result
 
     students = [
-      for email in var.student_emails : {
-        username = replace(replace(lower(email), "@", "_"), ".", "_")
+      for email in var.students : {
+        username = local.email_to_username[email]
         email    = email
         password = random_password.student_passwords[email].result
       }
@@ -159,7 +183,7 @@ resource "openstack_compute_floatingip_associate_v2" "gitlab_fip_assoc" {
 }
 
 # ==============================================================================
-# MOCK RESOURCE (für use_mock_provider = true)
+# MOCK RESOURCE
 # ==============================================================================
 
 resource "null_resource" "mock_gitlab_server" {

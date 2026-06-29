@@ -75,9 +75,23 @@ parameters:
         in_group_order: 3
         icon: Users
         placeholder: "Studierende auswählen..."
+        hint: "Alle teilnehmenden Studierenden auswählen — bekommen einen GitLab-User-Account. Pflicht für die optionale Gruppen-Einteilung unten."
         widget:
           type: user-picker
           multi: true
+          extract: email
+
+    - name: gitlab_groups
+      type: groups
+      required: false
+      description: "GitLab-interne Gruppen mit Mitgliedern (optional)"
+      x-ui:
+        group_id: general
+        in_group_order: 4
+        icon: Users
+        hint: "Optional: Studierende aus der Auswahl oben in GitLab-Gruppen organisieren (Developer-Rolle). Der Dozent ist automatisch Owner jeder Gruppe."
+        widget:
+          type: group-builder
           extract: email
 
   specific:
@@ -110,19 +124,6 @@ parameters:
         icon: Server
         placeholder: "17.0.8-ce.0"
         hint: "Versionsnummer aus dem offiziellen GitLab-Repository."
-
-    - name: gitlab_groups
-      type: groups
-      required: false
-      description: "GitLab-interne Gruppen mit Mitgliedern (optional)"
-      x-ui:
-        group_id: specific
-        in_group_order: 2
-        icon: Users
-        hint: "Optional: Studierende in GitLab-Gruppen organisieren. Wird in GitLab als Gruppe mit Mitgliedern angelegt."
-        widget:
-          type: group-builder
-          extract: email
 
 outputs:
   - name: instance_id

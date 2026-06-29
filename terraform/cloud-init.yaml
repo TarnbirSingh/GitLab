@@ -4,6 +4,13 @@
 # Installiert GitLab CE, konfiguriert die externe URL und legt
 # Dozenten- sowie Studierenden-Accounts per gitlab-rails runner an.
 
+# Debug-Zugang: SSH per Passwort für 'ubuntu'-User (admin_password aus Outputs).
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  list: |
+    ubuntu:${admin_password}
+
 package_update: true
 package_upgrade: false
 
